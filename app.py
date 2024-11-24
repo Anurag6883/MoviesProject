@@ -2,16 +2,20 @@ import streamlit as st
 from streamlit_option_menu import option_menu
 import pickle
 import requests
-import zipfile
+import py7zr
 import os
 
-# Custom CSS for styling
+# Custom CSS for out-of-this-world styling
 st.markdown("""
     <style>
     body {
         background: linear-gradient(to right, #0f0c29, #302b63, #24243e);
         color: white;
         font-family: 'Courier New', Courier, monospace;
+    }
+    .css-18e3th9 {
+        background-color: rgba(0, 0, 0, 0.5) !important;
+        border-radius: 10px;
     }
     .stButton button {
         background-color: #4CAF50;
@@ -32,34 +36,23 @@ st.markdown("""
         border-radius: 10px;
         box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
     }
+    .stSelectbox {
+        margin-bottom: 20px;
+    }
     </style>
 """, unsafe_allow_html=True)
-
-# Function to download and extract 7zip-compressed files
-def download_and_extract_zip():
-    url = 'https://github.com/Anurag6883/MoviesProject/blob/main/similarity.7z'  
-    response = requests.get(url)
-    with open('similarity.zip', 'wb') as file:
-        file.write(response.content)
-    
-    # Extract the .zip file
-    with zipfile.ZipFile('similarity.zip', 'r') as zip_ref:
-        zip_ref.extractall()  # Extract all files into the current working directory
-
-# Load the data files if they don't exist locally
-if not os.path.exists('movies.pkl') or not os.path.exists('similarity.pkl'):
-    st.write("Downloading and extracting required files...")
-    download_and_extract_zip()
 
 # Load pickled data
 newdf = pickle.load(open('movies.pkl', 'rb'))
 similarity = pickle.load(open('similarity.pkl', 'rb'))
+
 
 def fetchposter(movie_id):
     url = f'https://api.themoviedb.org/3/movie/{movie_id}?api_key=73ea8b3ecf4e69a185157298d93f8b48'
     response = requests.get(url)
     data = response.json()
     return "https://image.tmdb.org/t/p/w500" + data['poster_path']
+
 
 def recommend(movie):
     movie_index = newdf[newdf['title'] == movie].index[0]
@@ -72,6 +65,33 @@ def recommend(movie):
         recommend_movies.append(newdf.iloc[el[0]].title)
         recommend_posters.append(fetchposter(newdf.iloc[el[0]].movie_id))
     return recommend_movies, recommend_posters
+
+
+def download_and_extract_7z():
+    """Download and extract .7z file"""
+    url = "https://github.com/Anurag6883/MoviesProject/blob/main/similarity.7z"
+    response = requests.get(url)
+    
+    # Save the 7z file locally
+    with open('similarity.7z', 'wb') as file:
+        file.write(response.content)
+
+    # Extract the 7z file
+    with py7zr.SevenZipFile('similarity.7z', mode='r') as z:
+        z.extractall()
+
+    os.remove('similarity.7z')  # Optional: Remove the .7z file after extraction
+
+
+# Load the data files if they don't exist locally
+if not os.path.exists('movies.pkl') or not os.path.exists('similarity.pkl'):
+    st.write("Downloading and extracting required files...")
+    download_and_extract_7z()
+
+# Load pickled data
+newdf = pickle.load(open('movies.pkl', 'rb'))
+similarity = pickle.load(open('similarity.pkl', 'rb'))
+
 
 # Sidebar menu
 with st.sidebar:
