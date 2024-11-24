@@ -45,7 +45,7 @@ st.markdown("""
 # Function to download and extract .7z file
 def download_and_extract_7z():
     """Download and extract .7z file"""
-    url = "https://github.com/Anurag6883/MoviesProject/blob/main/similarity.7z"
+    url = "https://github.com/Anurag6883/MoviesProject/blob/main/similarity.7z?raw=true"
     try:
         response = requests.get(url)
         if response.status_code == 200:
