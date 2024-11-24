@@ -37,7 +37,7 @@ st.markdown("""
 
 # Function to download and extract 7zip-compressed files
 def download_and_extract_zip():
-    url = 'https://github.com/yourusername/yourrepo/raw/main/similarity.zip'  # Replace with your URL
+    url = 'https://github.com/Anurag6883/MoviesProject/blob/main/similarity.7z'  
     response = requests.get(url)
     with open('similarity.zip', 'wb') as file:
         file.write(response.content)
