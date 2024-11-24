@@ -42,18 +42,59 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Load pickled data
-newdf = pickle.load(open('movies.pkl', 'rb'))
-similarity = pickle.load(open('similarity.pkl', 'rb'))
+# Function to download and extract .7z file
+def download_and_extract_7z():
+    """Download and extract .7z file"""
+    url = "https://github.com/Anurag6883/MoviesProject/blob/main/similarity.7z?raw=true"
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            # Save the .7z file locally
+            with open('similarity.7z', 'wb') as file:
+                file.write(response.content)
 
+            # Extract the .7z file
+            with py7zr.SevenZipFile('similarity.7z', mode='r') as z:
+                z.extractall()
 
+            os.remove('similarity.7z')  # Remove the .7z file after extraction
+            st.success("Files downloaded and extracted successfully.")
+        else:
+            st.error(f"Failed to download .7z file, status code: {response.status_code}")
+    except Exception as e:
+        st.error(f"An error occurred while downloading or extracting the files: {e}")
+
+# Function to load pickled data
+def load_pickled_data():
+    try:
+        newdf = pickle.load(open('movies.pkl', 'rb'))
+        similarity = pickle.load(open('similarity.pkl', 'rb'))
+        return newdf, similarity
+    except FileNotFoundError:
+        st.write("Pickle files not found, downloading them...")
+        download_and_extract_7z()
+        if os.path.exists('movies.pkl') and os.path.exists('similarity.pkl'):
+            newdf = pickle.load(open('movies.pkl', 'rb'))
+            similarity = pickle.load(open('similarity.pkl', 'rb'))
+            return newdf, similarity
+        else:
+            st.error("Failed to load pickle files. Please check the download and extraction process.")
+            return None, None
+
+# Load the data files if they don't exist locally
+newdf, similarity = load_pickled_data()
+
+if newdf is None or similarity is None:
+    st.stop()  # Stop execution if data is not loaded
+
+# Function to fetch poster image URL
 def fetchposter(movie_id):
     url = f'https://api.themoviedb.org/3/movie/{movie_id}?api_key=73ea8b3ecf4e69a185157298d93f8b48'
     response = requests.get(url)
     data = response.json()
     return "https://image.tmdb.org/t/p/w500" + data['poster_path']
 
-
+# Function to recommend movies based on similarity
 def recommend(movie):
     movie_index = newdf[newdf['title'] == movie].index[0]
     similar = similarity[movie_index]
@@ -65,33 +106,6 @@ def recommend(movie):
         recommend_movies.append(newdf.iloc[el[0]].title)
         recommend_posters.append(fetchposter(newdf.iloc[el[0]].movie_id))
     return recommend_movies, recommend_posters
-
-
-def download_and_extract_7z():
-    """Download and extract .7z file"""
-    url = "https://github.com/Anurag6883/MoviesProject/blob/main/similarity.7z"
-    response = requests.get(url)
-    
-    # Save the 7z file locally
-    with open('similarity.7z', 'wb') as file:
-        file.write(response.content)
-
-    # Extract the 7z file
-    with py7zr.SevenZipFile('similarity.7z', mode='r') as z:
-        z.extractall()
-
-    os.remove('similarity.7z')  # Optional: Remove the .7z file after extraction
-
-
-# Load the data files if they don't exist locally
-if not os.path.exists('movies.pkl') or not os.path.exists('similarity.pkl'):
-    st.write("Downloading and extracting required files...")
-    download_and_extract_7z()
-
-# Load pickled data
-newdf = pickle.load(open('movies.pkl', 'rb'))
-similarity = pickle.load(open('similarity.pkl', 'rb'))
-
 
 # Sidebar menu
 with st.sidebar:
@@ -114,8 +128,7 @@ if selectedmenu == 'Home':
         recommend_movies, recommend_posters = recommend(movie_selected)
 
         # Display the recommendations in an elegant layout
-        st.markdown("<h3 style='text-align: center; color: #FFA500;'>Recommended Movies for You</h3>",
-                    unsafe_allow_html=True)
+        st.markdown("<h3 style='text-align: center; color: #FFA500;'>Recommended Movies for You</h3>", unsafe_allow_html=True)
 
         col1, col2, col3 = st.columns(3)
         with col1:
